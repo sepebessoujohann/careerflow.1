@@ -18,20 +18,17 @@ export default async function ResumeListPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 p-6">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-8 flex items-center justify-between gap-4">
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-8 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm text-slate-500">CV</p>
             <h1 className="text-3xl font-black text-slate-900">Mes CV</h1>
           </div>
 
-          <Link
-            href="/dashboard/cv/new"
-            className="rounded-xl bg-brand-500 px-4 py-2.5 font-semibold text-white hover:bg-brand-600"
-          >
+          <Link href="/dashboard/cv/new" className="rounded-xl bg-brand-500 px-4 py-2.5 font-semibold text-white hover:bg-brand-600">
             Nouveau CV
           </Link>
-        </div>
+        </header>
 
         <div className="grid gap-5">
           {resumes.length === 0 ? (
@@ -50,12 +47,14 @@ export default async function ResumeListPage() {
                     </p>
                   </div>
 
-                  <Link
-                    href={`/dashboard/cv/${resume.id}`}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300"
-                  >
-                    Ouvrir
-                  </Link>
+                  <div className="flex gap-3">
+                    <Link href={`/dashboard/cv/${resume.id}`} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-300">
+                      Ouvrir
+                    </Link>
+                    <Link href={`/dashboard/cv/${resume.id}/pdf`} className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600">
+                      PDF
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))
