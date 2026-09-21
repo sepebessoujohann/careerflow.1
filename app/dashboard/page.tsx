@@ -1,94 +1,18 @@
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-const updateResumeSchema = z.object({
-  title: z.string().min(2).max(120).optional(),
-  summary: z.string().optional(),
-  content: z.any().optional(),
-  isPublic: z.boolean().optional(),
-});
-
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-
-  if (!session) {
-    return NextResponse.json({ message: 'Non authentifié' }, { status: 401 });
-  }
-
-  const resume = await prisma.resume.findFirst({
-    where: {
-      id: params.id,
-      userId: session.user.id,
-    },
-  });
-
-  if (!resume) {
-    return NextResponse.json({ message: 'CV introuvable' }, { status: 404 });
-  }
-
-  return NextResponse.json(resume);
-}
-
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    return NextResponse.json({ message: 'Non authentifié' }, { status: 401 });
-  }
-
-  try {
-    const body = await request.json();
-    const data = updateResumeSchema.parse(body);
-
-    const resume = await prisma.resume.updateMany({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-      data,
-    });
-
-    if (resume.count === 0) {
-      return NextResponse.json({ message: 'CV introuvable' }, { status: 404 });
-    }
-
-    const updatedResume = await prisma.resume.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-    });
-
-    return NextResponse.json(updatedResume);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
-    }
-
-    return NextResponse.json({ message: 'Erreur lors de la mise à jour du CV' }, { status: 500 });
-  }
-}
-
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    return NextResponse.json({ message: 'Non authentifié' }, { status: 401 });
-  }
-
-  const deleted = await prisma.resume.deleteMany({
-    where: {
-      id: params.id,
-      userId: session.user.id,
-    },
-  });
-
-  if (deleted.count === 0) {
-    return NextResponse.json({ message: 'CV introuvable' }, { status: 404 });
-  }
-
-  return NextResponse.json({ success: true });
+  if (!session) redirect('/sign-in');
+  const resumeCount = await prisma.resume.count({ where: { userId: session.user.id } });
+  return (
+    <main className="min-h-screen bg-slate-100 p-6"><div className="mx-auto max-w-6xl">
+      <header className="mb-8 flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-soft"><div><p className="text-sm text-slate-500">Tableau de bord</p><h1 className="text-2xl font-bold text-slate-900">Bonjour, {session.user?.name || 'utilisateur'}</h1></div><div className="flex gap-3"><Link href="/dashboard/cv" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-semibold text-slate-700">Mes CV</Link><Link href="/pricing" className="rounded-xl bg-brand-500 px-4 py-2.5 font-semibold text-white">Passer en Pro</Link></div></header>
+      <div className="grid gap-6 md:grid-cols-3"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft"><p className="text-sm text-slate-500">CV actifs</p><p className="mt-3 text-3xl font-black text-slate-900">{resumeCount}</p></div><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft"><p className="text-sm text-slate-500">Documents</p><p className="mt-3 text-3xl font-black text-slate-900">0</p></div><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft"><p className="text-sm text-slate-500">Abonnement</p><p className="mt-3 text-3xl font-black text-slate-900">Free</p></div></div>
+      <div className="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-soft"><div className="flex items-center justify-between"><h2 className="text-xl font-bold text-slate-900">Commencer</h2><Link href="/dashboard/cv/new" className="rounded-xl bg-brand-500 px-4 py-2 font-semibold text-white">Nouveau CV</Link></div><p className="mt-4 text-slate-600">Créez votre premier CV professionnel et choisissez un modèle adapté à votre profil.</p></div>
+    </div></main>
+  );
 }
