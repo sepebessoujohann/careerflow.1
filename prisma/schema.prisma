@@ -26,7 +26,7 @@ model Resume {
   title     String   @default("Mon CV")
   summary   String?
   content   Json     @default("{}")
-  template  String?  @default("classic")
+  template  String   @default("classic")
   isPublic  Boolean  @default(false)
   shareUrl  String?
   createdAt DateTime @default(now())
