@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getServerSession } from 'next-auth';
+import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -37,9 +37,14 @@ export default async function ResumeDetailPage({ params }: { params: { id: strin
             <h1 className="text-3xl font-black text-slate-900">{resume.title}</h1>
           </div>
 
-          <Link href="/dashboard/cv" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-semibold text-slate-700 hover:border-slate-300">
-            Retour
-          </Link>
+          <div className="flex gap-3">
+            <Link href="/dashboard/cv" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-semibold text-slate-700 hover:border-slate-300">
+              Retour
+            </Link>
+            <Link href={`/dashboard/cv/${resume.id}/pdf`} className="rounded-xl bg-brand-500 px-4 py-2.5 font-semibold text-white hover:bg-brand-600">
+              Télécharger PDF
+            </Link>
+          </div>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-soft">

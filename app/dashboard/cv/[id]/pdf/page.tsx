@@ -1,10 +1,9 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-export default async function ResumeDetailPage({ params }: { params: { id: string } }) {
+export default async function ResumePdfPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
@@ -28,103 +27,138 @@ export default async function ResumeDetailPage({ params }: { params: { id: strin
   const education = Array.isArray(content.education) ? content.education : [];
   const projects = Array.isArray(content.projects) ? content.projects : [];
 
-  return (
-    <main className="min-h-screen bg-slate-100 p-6">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-slate-500">CV</p>
-            <h1 className="text-3xl font-black text-slate-900">{resume.title}</h1>
+  const templateStyles = {
+    classic: {
+      panel: '#0f172a',
+      accent: '#2563eb',
+      bg: '#ffffff',
+      text: '#0f172a',
+      muted: '#475569',
+    },
+    modern: {
+      panel: '#1d4ed8',
+      accent: '#93c5fd',
+      bg: '#f8fbff',
+      text: '#0f172a',
+      muted: '#475569',
+    },
+    minimal: {
+      panel: '#f8fafc',
+      accent: '#111827',
+      bg: '#ffffff',
+      text: '#111827',
+      muted: '#6b7280',
+    },
+  };
+
+  const theme = templateStyles[(resume.template as keyof typeof templateStyles) || 'classic'];
+
+  const html = `
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${resume.title}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            color: ${theme.text};
+            background: ${theme.bg};
+            margin: 0;
+            padding: 0;
+          }
+          .page {
+            width: 794px;
+            min-height: 1123px;
+            padding: 36px 42px;
+            box-sizing: border-box;
+            background: ${theme.bg};
+          }
+          .header {
+            background: ${theme.panel};
+            color: white;
+            padding: 20px 24px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+          }
+          h1 { margin: 0; font-size: 28px; }
+          h2 { font-size: 18px; margin: 0 0 10px; color: ${theme.panel}; }
+          p { margin: 6px 0; line-height: 1.5; }
+          .meta { color: ${theme.muted}; font-size: 13px; }
+          .section { margin-top: 20px; }
+          .item { margin-top: 12px; }
+          .accent { color: ${theme.accent}; }
+        </style>
+      </head>
+      <body>
+        <div class="page">
+          <div class="header">
+            <h1>${personalInfo.firstName || 'Prénom'} ${personalInfo.lastName || 'Nom'}</h1>
+            <p><strong>${personalInfo.title || 'Titre professionnel'}</strong></p>
+            <p>${personalInfo.email || 'email@example.com'} • ${personalInfo.phone || '+221 00 000 00 00'} • ${personalInfo.city || 'Ville'}</p>
           </div>
 
-          <div className="flex gap-3">
-            <Link href="/dashboard/cv" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-semibold text-slate-700 hover:border-slate-300">
-              Retour
-            </Link>
-            <Link href={`/dashboard/cv/${resume.id}/pdf`} className="rounded-xl bg-brand-500 px-4 py-2.5 font-semibold text-white hover:bg-brand-600">
-              Télécharger PDF
-            </Link>
+          <div class="section">
+            <h2>Profil</h2>
+            <p>${resume.summary || content.summary || 'Aucun résumé.'}</p>
+          </div>
+
+          <div class="section">
+            <h2>Expérience</h2>
+            ${experience.map((item: any) => `
+              <div class="item">
+                <p><strong>${item.position || 'Poste'}</strong> — ${item.company || 'Entreprise'}</p>
+                <p class="meta">${item.period || 'Période'}</p>
+                <p>${item.description || ''}</p>
+              </div>
+            `).join('') || '<p>Aucune expérience renseignée.</p>'}
+          </div>
+
+          <div class="section">
+            <h2>Formation</h2>
+            ${education.map((item: any) => `
+              <div class="item">
+                <p><strong>${item.degree || 'Diplôme'}</strong> — ${item.institution || 'Établissement'}</p>
+                <p class="meta">${item.period || 'Période'}</p>
+                <p>${item.description || ''}</p>
+              </div>
+            `).join('') || '<p>Aucune formation renseignée.</p>'}
+          </div>
+
+          <div class="section">
+            <h2>Compétences</h2>
+            <p>${content.skills || 'Aucune compétence renseignée.'}</p>
+          </div>
+
+          <div class="section">
+            <h2>Projets</h2>
+            ${projects.map((item: any) => `
+              <div class="item">
+                <p><strong>${item.name || 'Projet'}</strong></p>
+                <p>${item.description || ''}</p>
+              </div>
+            `).join('') || '<p>Aucun projet renseigné.</p>'}
           </div>
         </div>
+      </body>
+    </html>
+  `;
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-soft">
-          <div className="mb-6 border-b border-slate-200 pb-6">
-            <h2 className="text-3xl font-black text-slate-900">
-              {personalInfo.firstName || 'Prénom'} {personalInfo.lastName || 'Nom'}
-            </h2>
-            <p className="mt-2 text-lg text-brand-600">{personalInfo.title || 'Titre professionnel'}</p>
-            <p className="mt-2 text-sm text-slate-500">
-              {personalInfo.email || 'email@example.com'} • {personalInfo.phone || '+221 00 000 00 00'} • {personalInfo.city || 'Ville'}
-            </p>
-          </div>
+  return (
+    <main className="min-h-screen bg-slate-100 p-10">
+      <div className="mx-auto max-w-4xl rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-black text-slate-900">Aperçu PDF</h1>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded-xl bg-brand-500 px-4 py-2 font-semibold text-white hover:bg-brand-600"
+          >
+            Imprimer / Enregistrer en PDF
+          </button>
+        </div>
 
-          <div className="space-y-6">
-            <section>
-              <h3 className="text-lg font-bold text-slate-800">Profil</h3>
-              <p className="mt-2 text-slate-600">{resume.summary || content.summary || 'Aucun résumé disponible.'}</p>
-            </section>
-
-            <section>
-              <h3 className="text-lg font-bold text-slate-800">Expérience</h3>
-              <div className="mt-3 space-y-3">
-                {experience.length === 0 ? (
-                  <p className="text-slate-600">Aucune expérience renseignée.</p>
-                ) : (
-                  experience.map((item: any, i: number) => (
-                    <div key={i} className="rounded-2xl border border-slate-200 p-4">
-                      <p className="font-semibold text-slate-800">{item.position || 'Poste'}</p>
-                      <p className="text-sm text-slate-500">{item.company || 'Entreprise'} • {item.period || 'Période'}</p>
-                      <p className="mt-2 whitespace-pre-line text-slate-600">{item.description || 'Aucune description.'}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <section>
-              <h3 className="text-lg font-bold text-slate-800">Formation</h3>
-              <div className="mt-3 space-y-3">
-                {education.length === 0 ? (
-                  <p className="text-slate-600">Aucune formation renseignée.</p>
-                ) : (
-                  education.map((item: any, i: number) => (
-                    <div key={i} className="rounded-2xl border border-slate-200 p-4">
-                      <p className="font-semibold text-slate-800">{item.degree || 'Diplôme'}</p>
-                      <p className="text-sm text-slate-500">{item.institution || 'Établissement'} • {item.period || 'Période'}</p>
-                      <p className="mt-2 text-slate-600">{item.description || 'Aucune description.'}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <section>
-              <h3 className="text-lg font-bold text-slate-800">Compétences</h3>
-              <p className="mt-2 whitespace-pre-line text-slate-600">{content.skills || 'Aucune compétence renseignée.'}</p>
-            </section>
-
-            <section>
-              <h3 className="text-lg font-bold text-slate-800">Projets</h3>
-              <div className="mt-3 space-y-3">
-                {projects.length === 0 ? (
-                  <p className="text-slate-600">Aucun projet renseigné.</p>
-                ) : (
-                  projects.map((item: any, i: number) => (
-                    <div key={i} className="rounded-2xl border border-slate-200 p-4">
-                      <p className="font-semibold text-slate-800">{item.name || 'Projet'}</p>
-                      <p className="mt-2 text-slate-600">{item.description || 'Description indisponible.'}</p>
-                      {item.link ? <a href={item.link} className="mt-2 inline-block text-brand-600" target="_blank" rel="noreferrer">Voir le projet</a> : null}
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <section>
-              <h3 className="text-lg font-bold text-slate-800">Langues</h3>
-              <p className="mt-2 text-slate-600">{content.languages || 'Aucune langue renseignée.'}</p>
-            </section>
-          </div>
+        <div className="overflow-hidden rounded-2xl border border-slate-200">
+          <div dangerouslySetInnerHTML={{ __html: html }} />
         </div>
       </div>
     </main>
