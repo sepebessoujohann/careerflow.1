@@ -1,4 +1,5 @@
 import './globals.css';
+import { Providers } from '@/components/providers';
 
 export const metadata = {
   title: 'CareerFlow',
@@ -8,7 +9,9 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
