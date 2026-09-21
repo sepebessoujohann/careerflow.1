@@ -1,82 +1,94 @@
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-export default async function DashboardPage() {
+const updateResumeSchema = z.object({
+  title: z.string().min(2).max(120).optional(),
+  summary: z.string().optional(),
+  content: z.any().optional(),
+  isPublic: z.boolean().optional(),
+});
+
+export async function GET(_: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    redirect('/sign-in');
+    return NextResponse.json({ message: 'Non authentifié' }, { status: 401 });
   }
 
-  return (
-    <main className="min-h-screen bg-slate-100 p-6">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-8 flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
-          <div>
-            <p className="text-sm text-slate-500">Tableau de bord</p>
-            <h1 className="text-2xl font-bold text-slate-900">Bonjour, {session.user?.name || 'utilisateur'}</h1>
-          </div>
+  const resume = await prisma.resume.findFirst({
+    where: {
+      id: params.id,
+      userId: session.user.id,
+    },
+  });
 
-          <Link href="/pricing" className="rounded-xl bg-brand-500 px-4 py-2.5 font-semibold text-white hover:bg-brand-600">
-            Passer en Pro
-          </Link>
-        </header>
+  if (!resume) {
+    return NextResponse.json({ message: 'CV introuvable' }, { status: 404 });
+  }
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
-            <p className="text-sm text-slate-500">CV actifs</p>
-            <p className="mt-3 text-3xl font-black text-slate-900">03</p>
-          </div>
+  return NextResponse.json(resume);
+}
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
-            <p className="text-sm text-slate-500">Documents</p>
-            <p className="mt-3 text-3xl font-black text-slate-900">12</p>
-          </div>
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
-            <p className="text-sm text-slate-500">Abonnement</p>
-            <p className="mt-3 text-3xl font-black text-slate-900">Free</p>
-          </div>
-        </div>
+  if (!session) {
+    return NextResponse.json({ message: 'Non authentifié' }, { status: 401 });
+  }
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">Mes CV</h2>
-              <button className="rounded-xl bg-brand-500 px-4 py-2 font-semibold text-white hover:bg-brand-600">
-                Nouveau CV
-              </button>
-            </div>
+  try {
+    const body = await request.json();
+    const data = updateResumeSchema.parse(body);
 
-            <div className="space-y-4">
-              {['CV Développeur', 'CV Ingénierie', 'CV Étudiant'].map((cv) => (
-                <div key={cv} className="flex items-center justify-between rounded-2xl border border-slate-200 p-4">
-                  <div>
-                    <p className="font-semibold text-slate-900">{cv}</p>
-                    <p className="text-sm text-slate-500">Dernière modification : aujourd’hui</p>
-                  </div>
-                  <button className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700">
-                    Ouvrir
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+    const resume = await prisma.resume.updateMany({
+      where: {
+        id: params.id,
+        userId: session.user.id,
+      },
+      data,
+    });
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-            <h2 className="text-xl font-bold text-slate-900">Statut</h2>
-            <ul className="mt-6 space-y-3 text-sm text-slate-600">
-              <li>✓ Création de CV</li>
-              <li>✓ Aperçu en direct</li>
-              <li>✓ Export PDF</li>
-              <li>✓ Modèles disponibles</li>
-              <li>○ IA améliorations</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
+    if (resume.count === 0) {
+      return NextResponse.json({ message: 'CV introuvable' }, { status: 404 });
+    }
+
+    const updatedResume = await prisma.resume.findFirst({
+      where: {
+        id: params.id,
+        userId: session.user.id,
+      },
+    });
+
+    return NextResponse.json(updatedResume);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
+    }
+
+    return NextResponse.json({ message: 'Erreur lors de la mise à jour du CV' }, { status: 500 });
+  }
+}
+
+export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return NextResponse.json({ message: 'Non authentifié' }, { status: 401 });
+  }
+
+  const deleted = await prisma.resume.deleteMany({
+    where: {
+      id: params.id,
+      userId: session.user.id,
+    },
+  });
+
+  if (deleted.count === 0) {
+    return NextResponse.json({ message: 'CV introuvable' }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true });
 }

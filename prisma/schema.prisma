@@ -8,21 +8,25 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  passwordHash  String
-  fullName      String?
-  role          String    @default("user")
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  resumes       Resume[]
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  fullName     String?
+  role         String    @default("user")
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  resumes Resume[]
 }
 
 model Resume {
   id        String   @id @default(uuid())
   userId    String
   title     String   @default("Mon CV")
+  summary   String?
+  content   Json     @default("{}")
+  template  String?  @default("classic")
   isPublic  Boolean  @default(false)
   shareUrl  String?
   createdAt DateTime @default(now())

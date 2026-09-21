@@ -1,44 +1,87 @@
-# CareerFlow
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
-CareerFlow est une plateforme de création, amélioration et gestion de documents professionnels et scolaires. Le MVP actuel vise à lancer une expérience solide autour de la création de CV, de l’aperçu temps réel et de l’export PDF.
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions);
 
-## Stack
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- Prisma
-- PostgreSQL
+  if (!session) {
+    redirect('/sign-in');
+  }
 
-## Démarrage rapide
+  return (
+    <main className="min-h-screen bg-slate-100 p-6">
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-8 flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
+          <div>
+            <p className="text-sm text-slate-500">Tableau de bord</p>
+            <h1 className="text-2xl font-bold text-slate-900">Bonjour, {session.user?.name || 'utilisateur'}</h1>
+          </div>
 
-1. Copier `.env.example` vers `.env`
-2. Configurer `DATABASE_URL`
-3. Installer les dépendances :
-   ```bash
-   npm install
-   ```
-4. Démarrer le projet :
-   ```bash
-   npm run dev
-   ```
+          <div className="flex gap-3">
+            <Link href="/dashboard/cv" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-semibold text-slate-700 hover:border-slate-300">
+              Mes CV
+            </Link>
+            <Link href="/pricing" className="rounded-xl bg-brand-500 px-4 py-2.5 font-semibold text-white hover:bg-brand-600">
+              Passer en Pro
+            </Link>
+          </div>
+        </header>
 
-## Structure principale
-- `app/` : pages et routes
-- `components/` : composants UI
-- `prisma/` : schéma Prisma
-- `lib/` : utilitaires et services
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <p className="text-sm text-slate-500">CV actifs</p>
+            <p className="mt-3 text-3xl font-black text-slate-900">03</p>
+          </div>
 
-## MVP livré
-- page d’accueil
-- authentification UI de base
-- dashboard utilisateur
-- pages pricing
-- base Prisma préparée
-- structure de projet prête pour le développement
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <p className="text-sm text-slate-500">Documents</p>
+            <p className="mt-3 text-3xl font-black text-slate-900">12</p>
+          </div>
 
-## Prochaine étape
-- mise en place de l’authentification réelle
-- création de formulaires de CV
-- stockage en base PostgreSQL
-- génération PDF
-- abonnement Pro
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <p className="text-sm text-slate-500">Abonnement</p>
+            <p className="mt-3 text-3xl font-black text-slate-900">Free</p>
+          </div>
+        </div>
+
+        <div className="mt-10 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Mes CV</h2>
+              <Link href="/dashboard/cv/new" className="rounded-xl bg-brand-500 px-4 py-2 font-semibold text-white hover:bg-brand-600">
+                Nouveau CV
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {['CV Développeur', 'CV Ingénierie', 'CV Étudiant'].map((cv) => (
+                <div key={cv} className="flex items-center justify-between rounded-2xl border border-slate-200 p-4">
+                  <div>
+                    <p className="font-semibold text-slate-900">{cv}</p>
+                    <p className="text-sm text-slate-500">Dernière modification : aujourd’hui</p>
+                  </div>
+                  <button className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700">
+                    Ouvrir
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+            <h2 className="text-xl font-bold text-slate-900">Statut</h2>
+            <ul className="mt-6 space-y-3 text-sm text-slate-600">
+              <li>✓ Création de CV</li>
+              <li>✓ Aperçu en direct</li>
+              <li>✓ Export PDF</li>
+              <li>✓ Modèles disponibles</li>
+              <li>○ IA améliorations</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
